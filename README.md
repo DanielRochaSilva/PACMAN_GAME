@@ -59,7 +59,7 @@ Para rodar o jogo em sua máquina local, siga os passos abaixo:
 
 Este projeto foi desenvolvido por:
 
-    Daniel Rocha Silva - Aluno de Biotecnologia
-    Felipe Roehe - Aluno de Engenharia Elétrica
+    Daniel Rocha Silva - Graduando em Biotecnologia UFRGS
+    Felipe Roehe - Graduando em Engenharia Elétrica UFRGS
 
     
