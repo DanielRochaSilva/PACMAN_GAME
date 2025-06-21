@@ -1,1 +1,84 @@
 
+# src/settings.py
+import pygame
+import os
+
+# =========================================================================================
+# 1. CONFIGURAÇÕES GERAIS DA TELA E DO JOGO
+# =========================================================================================
+TITULO = "Pacman - Estrutura de Dados"
+FPS = 60  # Taxa de quadros por segundo para um movimento suave
+
+# O requisito é um mapa 20x20. Vamos definir o tamanho de cada "bloco" do grid
+# e calcular a largura e altura da tela a partir disso.
+GRID_SIZE = 30  # Tamanho de cada célula do grid em pixels
+GRID_WIDTH = 23   # Largura do grid conforme o requisito
+GRID_HEIGHT = 20  # Altura do grid conforme o requisito
+
+# Largura da tela calculada a partir do grid
+WIDTH = GRID_WIDTH * GRID_SIZE
+# Altura da tela. Adicionamos um espaço extra na parte inferior para UI (pontos, vidas)
+HEIGHT = GRID_HEIGHT * GRID_SIZE + 50
+
+
+# =========================================================================================
+# 2. CORES (PALETA DO JOGO)
+# =========================================================================================
+# Usar constantes para cores facilita a manutenção e garante consistência.
+# Formato: (R, G, B)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
+BLUE_WALL = (0, 0, 255)  # Cor para as paredes do labirinto
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+GREY = (128, 128, 128)
+
+
+# =========================================================================================
+# 3. CAMINHOS DE ARQUIVOS (ASSETS)
+# =========================================================================================
+# Vamos construir os caminhos de forma que funcionem em qualquer computador.
+# Pega o caminho absoluto do diretório onde este arquivo (settings.py) está.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# A pasta raiz do projeto está um nível "acima" da pasta 'src'
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+
+# Agora, construímos os caminhos a partir da raiz do projeto
+ASSETS_FOLDER = os.path.join(PROJECT_ROOT, 'assets')
+MAPS_FOLDER = os.path.join(ASSETS_FOLDER, 'maps')
+FONTS_FOLDER = os.path.join(ASSETS_FOLDER, 'fonts')
+
+# Exemplo de arquivo de fonte
+MAIN_FONT = os.path.join(FONTS_FOLDER, 'press-start-2p.ttf')
+# Arquivo para salvar o ranking
+RANKING_FILE = os.path.join(PROJECT_ROOT, 'ranking.txt')
+
+
+# =========================================================================================
+# 4. CONFIGURAÇÕES DO JOGADOR (PAC-MAN)
+# =========================================================================================
+PLAYER_START_LIVES = 3
+# A velocidade deve ser um divisor do GRID_SIZE para um movimento preciso no grid.
+# Ex: Com GRID_SIZE=30 e PLAYER_SPEED=2, o Pac-Man levará 15 frames para cruzar uma célula.
+PLAYER_SPEED = 2
+
+
+# =========================================================================================
+# 5. CONFIGURAÇÕES DOS INIMIGOS (FANTASMAS)
+# =========================================================================================
+GHOST_SPEED = 2
+# Tempo em segundos que os fantasmas ficam assustados após o Pac-Man comer um power-up.
+SCARED_TIME = 7
+# Tempo em segundos para o próximo fantasma sair da "fila" e entrar no jogo.
+# Isso se relaciona diretamente com o requisito do "TAD Cenário".
+GHOST_SPAWN_TIME = 5
+
+
+# =========================================================================================
+# 6. CONFIGURAÇÕES DA INTERFACE (UI)
+# =========================================================================================
+UI_FONT_SIZE = 20
+UI_VERTICAL_MARGIN = 10
+# Posição do painel da UI (na parte inferior da tela)
+UI_PANEL_POS = (0, GRID_HEIGHT * GRID_SIZE)
