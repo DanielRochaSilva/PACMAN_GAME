@@ -12,7 +12,7 @@ FPS = 60  # Taxa de quadros por segundo para um movimento suave
 # O requisito é um mapa 20x20. Vamos definir o tamanho de cada "bloco" do grid
 # e calcular a largura e altura da tela a partir disso.
 GRID_SIZE = 30  # Tamanho de cada célula do grid em pixels
-GRID_WIDTH = 23   # Largura do grid conforme o requisito
+GRID_WIDTH = 22   # Largura do grid conforme o requisito
 GRID_HEIGHT = 20  # Altura do grid conforme o requisito
 
 # Largura da tela calculada a partir do grid
@@ -82,3 +82,14 @@ UI_FONT_SIZE = 20
 UI_VERTICAL_MARGIN = 10
 # Posição do painel da UI (na parte inferior da tela)
 UI_PANEL_POS = (0, GRID_HEIGHT * GRID_SIZE)
+
+# =========================================================================================
+# 7. CAMINHOS DOS SPRITES (NOVO BLOCO)
+# =========================================================================================
+ART_FOLDER = os.path.join(ASSETS_FOLDER, 'pacman-art')
+
+# Subpastas para cada direção
+PACMAN_UP_FOLDER = os.path.join(ART_FOLDER, 'pacman-up')
+PACMAN_DOWN_FOLDER = os.path.join(ART_FOLDER, 'pacman-down')
+PACMAN_LEFT_FOLDER = os.path.join(ART_FOLDER, 'pacman-left')
+PACMAN_RIGHT_FOLDER = os.path.join(ART_FOLDER, 'pacman-right')

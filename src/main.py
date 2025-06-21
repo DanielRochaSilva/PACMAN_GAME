@@ -18,7 +18,7 @@ class Main:
         self.game = Game()
 
     def run(self):
-        # Chama o método que contém o loop principal do jogo
+        # Chama o metodo que contém o loop principal do jogo
         self.game.run()
 
 # O bloco de código que será executado quando você rodar "python src/main.py"

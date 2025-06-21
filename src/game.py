@@ -1,7 +1,5 @@
-
 #Gerencia os estados e o loop principal.
 
-# src/game.py
 # src/game.py
 
 import pygame
@@ -9,6 +7,7 @@ import sys
 import os  # <<<<---- 1. IMPORTAMOS A BIBLIOTECA 'os' PARA JUNTAR OS CAMINHOS
 from settings import *
 from level import Level
+from player import Player
 
 class Game:
     def __init__(self):
@@ -18,6 +17,8 @@ class Game:
         pygame.init()
 
 
+        self.score = 0
+        self.lives = PLAYER_START_LIVES
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(TITULO)
         self.clock = pygame.time.Clock()
@@ -25,28 +26,21 @@ class Game:
 
 
         # Construcao do caminho para o arquivo
-        caminho_do_mapa = os.path.join(MAPS_FOLDER, 'level_1.txt')
+        caminho_do_mapa = os.path.join(MAPS_FOLDER, 'level_2.txt')
         #  instância do Level
         self.level = Level(caminho_do_mapa)
 
-        # --- BLOCO DE TESTE TEMPORÁRIO ---
-        print("--- INICIANDO TESTES DE DEBUG DO MAPA ---")
-
-        # Teste 1: Usar find_symbol para achar a posição inicial do jogador
-        posicao_inicial_p = self.level.find_symbol('P')
-        print(f"Posição do jogador ('P') encontrada em: {posicao_inicial_p}")
-
-        # Teste 2: Usar is_wall para verificar uma parede e um caminho
-        # (Assumindo que a célula (0,0) é uma parede '#' e (1,1) não é)
-        print(f"A coordenada (0, 0) é uma parede? Resposta: {self.level.is_wall(0, 0)}")
-        print(f"A coordenada (1, 1) é uma parede? Resposta: {self.level.is_wall(1, 1)}")
-
-        # Teste 3: Usar get_tile para ver o que tem em uma célula
-        # (Assumindo que a célula (1,2) tem um pontinho '.' no seu mapa)
-        print(f"O que há na coordenada (1, 2)? Tile: '{self.level.get_tile(1, 2)}'")
-
-        print("--- FIM DOS TESTES DE DEBUG ---")
-
+        # <<<< ADICIONADO: Bloco que cria o jogador
+        # Usa o metodo find_symbol do TAD Mapa para achar a posição inicial
+        start_pos_list = self.level.find_symbol('P')
+        if start_pos_list:
+            # Pega a primeira posição encontrada (formato: (linha, coluna))
+            # e converte para (coluna, linha) para o nosso Player
+            start_pos = (start_pos_list[0][1], start_pos_list[0][0])
+            self.player = Player(self, start_pos)
+        else:
+            # Posição padrão caso 'P' não seja encontrado no mapa
+            self.player = Player(self, (1, 1))
 
 
 
@@ -65,14 +59,29 @@ class Game:
         Processa todos os eventos do jogo (teclado, mouse, fechar janela).
         """
         for event in pygame.event.get():
+            # Verificação #1: O jogador quer fechar o jogo?
             if event.type == pygame.QUIT:
                 self.running = False
+
+            # Verificação #2: O jogador apertou uma tecla?
+            # Este 'if' está no mesmo nível do 'if' anterior, fora dele.
+            if event.type == pygame.KEYDOWN:
+
+                # Agora, verificamos qual tecla foi para mover o jogador
+                if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    self.player.move(pygame.Vector2(-1, 0))
+                if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    self.player.move(pygame.Vector2(1, 0))
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    self.player.move(pygame.Vector2(0, -1))
+                if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    self.player.move(pygame.Vector2(0, 1))
 
     def update(self):
         """
         Atualiza a lógica do jogo.
         """
-        pass
+        self.player.update()
 
     def draw(self):
         """
@@ -80,4 +89,8 @@ class Game:
         """
         self.screen.fill(BLACK)
         self.level.draw(self.screen)
+        # <<<< ADICIONADO: Chama o metodo de desenho do jogador
+        self.player.draw(self.screen)
         pygame.display.flip()
+
+

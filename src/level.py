@@ -124,7 +124,7 @@ class Level:
                 if tile == '#':  # Desenha uma parede
                     pygame.draw.rect(screen, BLUE_WALL, (x, y, GRID_SIZE, GRID_SIZE))
                 elif tile == '.':  # Desenha um pontinho
-                    pygame.draw.circle(screen, WHITE, (x + GRID_SIZE // 2, y + GRID_SIZE // 2), 4)
+                    pygame.draw.circle(screen, YELLOW, (x + GRID_SIZE // 2, y + GRID_SIZE // 2), 4)
                 elif tile == 'o':  # Desenha um super ponto (power-up)
                     pygame.draw.circle(screen, WHITE, (x + GRID_SIZE // 2, y + GRID_SIZE // 2), 8)
                 # Os símbolos 'P' e 'G' não são desenhados aqui,
