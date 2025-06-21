@@ -221,7 +221,7 @@ class Game:
 
         pygame.display.flip()
 
-
+#loop principal
     def run(self):
         while self.running:
             if self.state == 'menu_principal':
