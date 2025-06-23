@@ -69,7 +69,7 @@ PLAYER_SPEED = 2
 # =========================================================================================
 GHOST_SPEED = 2
 # Tempo em segundos que os fantasmas ficam assustados após o Pac-Man comer um power-up.
-SCARED_TIME = 7
+SCARED_TIME = 10
 # Tempo em segundos para o próximo fantasma sair da "fila" e entrar no jogo.
 # Isso se relaciona diretamente com o requisito do "TAD Cenário".
 GHOST_SPAWN_TIME = 5
@@ -93,3 +93,11 @@ PACMAN_UP_FOLDER = os.path.join(ART_FOLDER, 'pacman-up')
 PACMAN_DOWN_FOLDER = os.path.join(ART_FOLDER, 'pacman-down')
 PACMAN_LEFT_FOLDER = os.path.join(ART_FOLDER, 'pacman-left')
 PACMAN_RIGHT_FOLDER = os.path.join(ART_FOLDER, 'pacman-right')
+
+# Caminho para a pasta dos fantasmas
+GHOSTS_FOLDER = os.path.join(ART_FOLDER, 'ghosts')
+
+# =========================================================================================
+# 8. CONFIGURAÇÕES DE JOGABILIDADE (NOVA SEÇÃO)
+# =========================================================================================
+TUNNEL_COOLDOWN_SEC = 1.5 # Tempo em segundos que os túneis ficam inativos após o uso

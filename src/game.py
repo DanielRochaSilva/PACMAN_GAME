@@ -8,6 +8,8 @@ import os  # <<<<---- 1. IMPORTAMOS A BIBLIOTECA 'os' PARA JUNTAR OS CAMINHOS
 from settings import *
 from level import Level
 from player import Player
+from collections import deque
+from enemy import Enemy
 
 class Game:
     def __init__(self):
@@ -26,7 +28,7 @@ class Game:
 
 
         # Construcao do caminho para o arquivo
-        caminho_do_mapa = os.path.join(MAPS_FOLDER, 'level_2.txt')
+        caminho_do_mapa = os.path.join(MAPS_FOLDER, 'level_1.txt')
         #  instância do Level
         self.level = Level(caminho_do_mapa)
 
@@ -46,10 +48,38 @@ class Game:
         self.pause_options = ['Sair e Salvar', 'Sair sem Salvar', 'Cancelar']
         self.selected_pause_option = 0  # O índice da opção selecionada (começa em 0)
 
+        # Atributo para o cooldown do túnel
+        self.tunnel_cooldown = 0  # Em frames. 0 significa que os túneis estão ativos.
 
+        #fantasmas
+        self.enemies = []
+        self.ghost_queue = deque()
+        self.ghost_spawn_timer = 0
+
+        self.ghost_sprites = {}  # Dicionário para guardar as imagens dos fantasmas
+        self.load_ghost_sprites()  # Carrega as imagens na inicialização
+        self.load_enemies()  # Agora usa as imagens carregadas
 
     # --- MÉTODOS DE ESTADO: MENU ---
 
+    def load_ghost_sprites(self):
+        """
+        Carrega, redimensiona e armazena todas as imagens dos fantasmas.
+        """
+        # Pega todos os arquivos .png da pasta e os ordena para garantir a consistência
+        filenames = sorted([f for f in os.listdir(GHOSTS_FOLDER) if f.endswith('.png')])
+
+        # Mapeia um nome para cada sprite (pode ajustar se os nomes forem diferentes)
+        sprite_keys = ['blinky', 'pinky', 'inky', 'clyde', 'scared']
+
+        for i, filename in enumerate(filenames):
+            # Garante que não tentemos acessar um índice de sprite_keys que não existe
+            if i < len(sprite_keys):
+                key = sprite_keys[i]
+                path = os.path.join(GHOSTS_FOLDER, filename)
+                img = pygame.image.load(path).convert_alpha()
+                scaled_img = pygame.transform.scale(img, (GRID_SIZE, GRID_SIZE))
+                self.ghost_sprites[key] = scaled_img
 
     def menu_principal_events(self):
         for event in pygame.event.get():
@@ -111,11 +141,42 @@ class Game:
                 if event.key == pygame.K_DOWN or event.key == pygame.K_s:
                     self.player.move(pygame.Vector2(0, 1))
 
+    def load_enemies(self):
+        """
+
+        Encontra as posições dos fantasmas e os cria com os sprites corretos.
+        """
+        ghost_positions = self.level.find_symbol('G')
+
+        # Pega as chaves dos sprites que carregamos (ex: 'blinky', 'pinky', etc.)
+        sprite_keys = list(self.ghost_sprites.keys())
+
+        for i, pos in enumerate(ghost_positions):
+            # Garante que estamos pegando uma chave de sprite que existe
+            if i < len(sprite_keys):
+                sprite_key = sprite_keys[i]
+                sprite = self.ghost_sprites[sprite_key]  # Pega a imagem já carregada
+                # Cria o inimigo e passa a IMAGEM, não mais a cor
+                self.ghost_queue.append(Enemy(self, (pos[1], pos[0]), sprite))
+
     def playing_update(self):
         """
         Atualiza a lógica do jogo.
         """
+        if self.tunnel_cooldown > 0:
+            self.tunnel_cooldown -= 1
+        # Se a fila não estiver vazia, contamos o tempo para liberar o próximo
+        if self.ghost_queue:
+            self.ghost_spawn_timer += 1
+            # Se o tempo passou (convertido para frames), libera um fantasma
+            if self.ghost_spawn_timer >= GHOST_SPAWN_TIME * FPS:
+                self.ghost_spawn_timer = 0
+                self.enemies.append(self.ghost_queue.popleft())  # Tira da fila e põe no jogo
+
         self.player.update()
+        # Atualiza cada inimigo na lista de ativos
+        for enemy in self.enemies:
+            enemy.update()
 
     def playing_draw(self):
         """
@@ -126,6 +187,9 @@ class Game:
         # <<<< ADICIONADO: Chama o metodo de desenho do jogador
         self.player.draw(self.screen)
         self.draw_ui()  # Garante que a UI seja desenhada por cima
+        for enemy in self.enemies:
+            enemy.draw(self.screen)
+        self.draw_ui()
         pygame.display.flip()
 
     def draw_ui(self):

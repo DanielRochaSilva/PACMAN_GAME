@@ -20,6 +20,9 @@ class Level:
         self.height = len(self.matrix)
         # Verifica se existe ao menos uma linha na matriz antes de tentar acessa-la
         self.width = len(self.matrix[0]) if self.height > 0 else 0
+        self.tunnels = {}
+        self._find_tunnels() # Chama o método para popular o dicionário
+
 
     # =========================================================================
     # MÉTODOS DE LÓGICA E DADOS
@@ -88,7 +91,31 @@ class Level:
         Retorna:
             bool: True se for uma celula que o jogador possa passar (ex: '.', ' ', 'o').
         """
-        return self.get_tile(line, column) in [' ', '.', 'o', 'P', 'G']
+        return self.get_tile(line, column) in [' ', '.', 'o', 'P', 'G', 'A', 'B', 'N', 'M', 'X', 'Y']
+
+    def _find_tunnels(self):
+        """
+        Encontra os portais de túnel no mapa e armazena suas conexões.
+        """
+        # Define os pares de túneis
+        tunnel_pairs = [('A', 'B'), ('N', 'M'), ('X', 'Y')]
+
+        for start_char, end_char in tunnel_pairs:
+            # Usa o método que já tínhamos para encontrar a posição de cada símbolo
+            start_pos_list = self.find_symbol(start_char)
+            end_pos_list = self.find_symbol(end_char)
+
+            # Se ambos os portais do par existirem no mapa
+            if start_pos_list and end_pos_list:
+                # Pega a primeira (e única) posição de cada
+                start_pos = start_pos_list[0]
+                end_pos = end_pos_list[0]
+
+                # Mapeia a conexão nos dois sentidos
+                self.tunnels[start_pos] = end_pos
+                self.tunnels[end_pos] = start_pos
+
+        print(f"Túneis carregados: {self.tunnels}")  # Print de teste
 
     def find_symbol(self, symbol):
         """

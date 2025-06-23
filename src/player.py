@@ -2,8 +2,6 @@
 
 # src/player.py
 
-# src/player.py
-
 import pygame
 import os
 from settings import *
@@ -35,6 +33,11 @@ class Player:
         self.animation_timer = 0
         self.animation_speed_ms = 80  # Tempo em milissegundos para cada frame da animação
 
+
+        # Campo do TAD Entidade: tempo restante de invencibilidade
+        self.invincibility_timer = 0  # 0 significa que não está invencível
+
+
     def load_animations(self):
         """
         Carrega todas as imagens de animação do Pac-Man a partir das pastas.
@@ -60,41 +63,63 @@ class Player:
 
         self.animations = {direction: data[1] for direction, data in directions.items()}
 
+    # Dentro da classe Player (src/player.py)
 
     def update(self):
         """
-        Atualiza a posição e a animação do jogador a cada frame.
+        Atualiza a posição, estado e animação do jogador, com cooldown de túnel.
         """
+        # 1. Processa timers, como o de invencibilidade
+        if self.invincibility_timer > 0:
+            self.invincibility_timer -= 1
+            if self.invincibility_timer == 0:
+                print("Modo invencível ACABOU.")
 
-
-        # --- LÓGICA DE MOVIMENTO ---
-        # Primeiro, tentamos mudar para a direção que o jogador apertou
-        if self.stored_direction and self.is_on_grid_center():
-            next_pos_grid = self.grid_pos + self.stored_direction
-            if not self.game.level.is_wall(int(next_pos_grid.y), int(next_pos_grid.x)):
-                self.direction = self.stored_direction
-                self.stored_direction = None
-
-        # Agora, verificamos se podemos continuar nos movendo na direção ATUAL
+        # 2. Só permitimos decisões de movimento quando o jogador está alinhado no grid
         if self.is_on_grid_center():
+            # <<<< LÓGICA DO TÚNEL ATUALIZADA >>>>
+            current_grid_pos_tuple = (int(self.grid_pos.y), int(self.grid_pos.x))
+            # VERIFICAÇÃO 1: O jogador está em um portal E o cooldown está zerado?
+            if current_grid_pos_tuple in self.game.level.tunnels and self.game.tunnel_cooldown == 0:
+                # Se for, teletransporta o jogador
+                destination = self.game.level.tunnels[current_grid_pos_tuple]
+                self.grid_pos = pygame.Vector2(destination[1], destination[0])
+                self.pixel_pos = pygame.Vector2(
+                    self.grid_pos.x * GRID_SIZE + GRID_SIZE // 2,
+                    self.grid_pos.y * GRID_SIZE + GRID_SIZE // 2
+                )
+
+                # VERIFICAÇÃO 2: Ativa o cooldown geral do jogo
+                self.game.tunnel_cooldown = int(TUNNEL_COOLDOWN_SEC * FPS)
+                return  # Encerra o update deste frame para evitar outros movimentos
+
+            # Se não estiver em um túnel (ou se o túnel estiver em cooldown), processa o input
+            if self.stored_direction:
+                next_pos_grid = self.grid_pos + self.stored_direction
+                if not self.game.level.is_wall(int(next_pos_grid.y), int(next_pos_grid.x)):
+                    self.direction = self.stored_direction
+            self.stored_direction = None
+
+            # Verifica se a direção atual vai bater numa parede
             next_pos_grid = self.grid_pos + self.direction
             if self.game.level.is_wall(int(next_pos_grid.y), int(next_pos_grid.x)):
-                # Se houver uma parede na frente, paramos
                 self.direction = pygame.Vector2(0, 0)
 
-        # Move o jogador com base na direção final
+        # 3. Move o jogador em pixels
         self.pixel_pos += self.direction * self.speed
 
-        # Atualiza a posição no grid (para lógica de colisões futuras)
-        if self.direction.x != 0 or self.direction.y != 0:
-            self.grid_pos.x = (self.pixel_pos.x - GRID_SIZE / 2) / GRID_SIZE
-            self.grid_pos.y = (self.pixel_pos.y - GRID_SIZE / 2) / GRID_SIZE
+        # 4. Atualiza a posição no grid e interage com itens
+        new_grid_pos = pygame.Vector2(int(self.pixel_pos.x / GRID_SIZE), int(self.pixel_pos.y / GRID_SIZE))
+        if new_grid_pos != self.grid_pos:
+            self.grid_pos = new_grid_pos
+            self.eat_item()
 
-        # --- LÓGICA DE ATUALIZAÇÃO DA ANIMAÇÃO ---
-        # Atualiza a animação
+        # 5. Atualiza a animação
         if self.direction.x != 0 or self.direction.y != 0:
+            self.animate()
 
-           self.animate()
+
+
 
     def animate(self):
         """ Controla a troca de frames da animação. """
@@ -146,4 +171,35 @@ class Player:
 
         return 'right'  # Retorna 'right' como um padrão seguro no início do jogo
 
+    # No final da classe Player (src/player.py)
 
+    def eat_item(self):
+        """
+        Verifica se há um item na posição atual do jogador e o consome.
+        """
+        # Pega a posição no grid, garantindo que sejam inteiros para usar como índice da matriz
+        grid_x = int(self.grid_pos.x)
+        grid_y = int(self.grid_pos.y)
+
+        # Usa o TAD Mapa para consultar o que há na célula
+        tile = self.game.level.get_tile(grid_y, grid_x)
+
+        if tile == '.':  # Se for um pontinho
+            # Usa o TAD Mapa para remover o item (troca por espaço vazio)
+            self.game.level.set_tile(grid_y, grid_x, ' ')
+            # Aumenta a pontuação no TAD Cenário (a classe Game)
+            self.game.score += 10
+
+        elif tile == 'o':  # Se for um power-up
+            self.game.level.set_tile(grid_y, grid_x, ' ')
+            self.game.score += 50
+            self.activate_invincibility()
+
+    def activate_invincibility(self):
+        """
+        Ativa o timer de invencibilidade do jogador.
+        """
+        # Converte o tempo em segundos (de settings.py) para frames
+        # Ex: 7 segundos * 60 FPS = 420 frames de invencibilidade
+        self.invincibility_timer = SCARED_TIME * FPS
+        print("MODO INVENCÍVEL ATIVADO!")  # Mensagem de teste
