@@ -67,9 +67,9 @@ PLAYER_SPEED = 2
 # =========================================================================================
 # 5. CONFIGURAÇÕES DOS INIMIGOS (FANTASMAS)
 # =========================================================================================
-GHOST_SPEED = 2
+GHOST_SPEED = 2.1
 # Tempo em segundos que os fantasmas ficam assustados após o Pac-Man comer um power-up.
-SCARED_TIME = 10
+SCARED_TIME = 7
 # Tempo em segundos para o próximo fantasma sair da "fila" e entrar no jogo.
 # Isso se relaciona diretamente com o requisito do "TAD Cenário".
 GHOST_SPAWN_TIME = 5

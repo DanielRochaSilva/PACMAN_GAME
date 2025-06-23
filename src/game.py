@@ -4,7 +4,7 @@
 
 import pygame
 import sys
-import os  # <<<<---- 1. IMPORTAMOS A BIBLIOTECA 'os' PARA JUNTAR OS CAMINHOS
+import os  #
 from settings import *
 from level import Level
 from player import Player
@@ -143,21 +143,25 @@ class Game:
 
     def load_enemies(self):
         """
-
-        Encontra as posições dos fantasmas e os cria com os sprites corretos.
+        Encontra as posições dos fantasmas e os cria com sprites e cooldowns individuais.
         """
         ghost_positions = self.level.find_symbol('G')
-
-        # Pega as chaves dos sprites que carregamos (ex: 'blinky', 'pinky', etc.)
         sprite_keys = list(self.ghost_sprites.keys())
 
+        # <<<< ADICIONADO: Lista com os tempos de cooldown em segundos, na ordem
+        cooldowns = [2.0, 3.1, 4.0, 4.5, 4.6]
+
         for i, pos in enumerate(ghost_positions):
-            # Garante que estamos pegando uma chave de sprite que existe
             if i < len(sprite_keys):
                 sprite_key = sprite_keys[i]
-                sprite = self.ghost_sprites[sprite_key]  # Pega a imagem já carregada
-                # Cria o inimigo e passa a IMAGEM, não mais a cor
-                self.ghost_queue.append(Enemy(self, (pos[1], pos[0]), sprite))
+                sprite = self.ghost_sprites[sprite_key]
+
+                # Pega o cooldown correspondente da lista
+                # Usamos o módulo (%) para o caso de haver mais fantasmas que cooldowns definidos
+                cooldown = cooldowns[i % len(cooldowns)]
+
+                # <<<< ALTERADO: Passa o cooldown individual para o construtor do Enemy
+                self.ghost_queue.append(Enemy(self, (pos[1], pos[0]), sprite, cooldown))
 
     def playing_update(self):
         """
@@ -284,6 +288,48 @@ class Game:
             self.screen.blit(option_text, option_rect)
 
         pygame.display.flip()
+
+
+    #IA fantasmas
+    def find_path(self, start_pos, target_pos):
+        """
+        Encontra o caminho mais curto entre dois pontos usando o algoritmo BFS.
+
+        :param start_pos: Tupla (x, y) da posição inicial no grid.
+        :param target_pos: Tupla (x, y) da posição alvo no grid.
+        :return: Lista de tuplas representando o caminho, ou None se não houver caminho.
+        """
+        # O mapa é o nosso grafo. Usaremos os métodos do TAD Mapa para navegar.
+        grid = self.level.matrix
+        # Fila para o BFS, armazena os caminhos a serem explorados
+        queue = deque([[start_pos]])
+        # Conjunto para guardar as posições já visitadas e evitar loops
+        visited = {start_pos}
+
+        while queue:
+            # Pega o primeiro caminho da fila
+            path = queue.popleft()
+            # Pega o último nó (posição) desse caminho
+            node = path[-1]
+
+            # Se chegamos ao alvo, retornamos o caminho encontrado
+            if node == target_pos:
+                return path
+
+            # Explora os vizinhos (Cima, Baixo, Esquerda, Direita)
+            for direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                next_node = (node[0] + direction[0], node[1] + direction[1])
+
+                # Verifica se o vizinho está dentro do mapa
+                if (0 <= next_node[0] < self.level.width and 0 <= next_node[1] < self.level.height):
+                    # Verifica se o vizinho não é uma parede e se ainda não foi visitado
+                    if not self.level.is_wall(next_node[1], next_node[0]) and next_node not in visited:
+                        new_path = list(path)
+                        new_path.append(next_node)
+                        queue.append(new_path)
+                        visited.add(next_node)
+
+        return None  # Retorna None se não encontrar um caminho
 
 #loop principal
     def run(self):
