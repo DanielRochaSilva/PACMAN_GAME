@@ -4,7 +4,7 @@
 
 import pygame
 import sys
-import os  #
+import os
 from settings import *
 from level import Level
 from player import Player
@@ -32,7 +32,7 @@ class Game:
         #  instância do Level
         self.level = Level(caminho_do_mapa)
 
-        # <<<< ADICIONADO: Bloco que cria o jogador
+        #  Bloco que cria o jogador
         # Usa o metodo find_symbol do TAD Mapa para achar a posição inicial
         start_pos_list = self.level.find_symbol('P')
         if start_pos_list:
@@ -45,6 +45,11 @@ class Game:
             self.player = Player(self, (1, 1))
 
         self.state = 'menu_principal'  # Define o estado inicial do jogo
+
+        # <<<< ALTERADO: Apague as antigas variáveis de pausa e adicione estas >>>>
+        self.menu_options = ['Iniciar Jogo', 'Ranking', 'Sair']
+        self.selected_menu_option = 0
+
         self.pause_options = ['Sair e Salvar', 'Sair sem Salvar', 'Cancelar']
         self.selected_pause_option = 0  # O índice da opção selecionada (começa em 0)
 
@@ -59,6 +64,11 @@ class Game:
         self.ghost_sprites = {}  # Dicionário para guardar as imagens dos fantasmas
         self.load_ghost_sprites()  # Carrega as imagens na inicialização
         self.load_enemies()  # Agora usa as imagens carregadas
+
+
+
+
+
 
     # --- MÉTODOS DE ESTADO: MENU ---
 
@@ -81,36 +91,71 @@ class Game:
                 scaled_img = pygame.transform.scale(img, (GRID_SIZE, GRID_SIZE))
                 self.ghost_sprites[key] = scaled_img
 
+    #  metodo para resetar o jogo inteiro
+    def reset_game(self):
+        """  Reseta_todo o estado do jogo para uma nova partida. """
+
+        self.score = 0
+        self.lives = PLAYER_START_LIVES
+
+        # Reseta as entidades para suas posições iniciais
+        self.player.reset()
+        # Limpa a lista de inimigos ativos
+        self.enemies = []
+        # Recria a fila de fantasmas e a repopula
+        self.ghost_queue = deque()
+        self.load_enemies()
+        # Reseta o timer de spawn dos fantasmas
+        self.ghost_spawn_timer = 0
+
+        # Reseta o mapa para restaurar todos os pontinhos
+        self.level.reset()
+
     def menu_principal_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            # Se apertar ENTER, muda o estado para 'jogando'
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.state = 'jogando'
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.selected_menu_option = (self.selected_menu_option - 1) % len(self.menu_options)
+                if event.key == pygame.K_DOWN:
+                    self.selected_menu_option = (self.selected_menu_option + 1) % len(self.menu_options)
+
+                if event.key == pygame.K_RETURN:
+                    # Opção 0: Iniciar Jogo
+                    if self.selected_menu_option == 0:
+                        self.reset_game()
+                        self.state = 'jogando'
+                    # Opção 1: Ranking
+                    elif self.selected_menu_option == 1:
+                        self.state = 'exibindo_ranking'
+                    # Opção 2: Sair
+                    elif self.selected_menu_option == 2:
+                        self.running = False
 
     def menu_principal_draw(self):
         self.screen.fill(BLACK)
-        # Lógica para desenhar o título e as opções do menu
         try:
             title_font = pygame.font.Font(MAIN_FONT, 48)
-            instructions_font = pygame.font.Font(MAIN_FONT, UI_FONT_SIZE)
-        except FileNotFoundError:
+            option_font = pygame.font.Font(MAIN_FONT, 28)
+        except:
             title_font = pygame.font.SysFont('arial', 48)
-            instructions_font = pygame.font.SysFont('arial', UI_FONT_SIZE)
+            option_font = pygame.font.SysFont('arial', 28)
 
+        # Desenha o título
         title_text = title_font.render(TITULO, True, YELLOW)
-        instructions_text = instructions_font.render("Pressione ENTER para iniciar", True, WHITE)
-
-        # Centraliza o texto na tela
-        title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
-        instructions_rect = instructions_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
-
+        title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
         self.screen.blit(title_text, title_rect)
-        self.screen.blit(instructions_text, instructions_rect)
+
+        # Desenha as opções
+        for index, option in enumerate(self.menu_options):
+            color = YELLOW if index == self.selected_menu_option else WHITE
+            option_text = option_font.render(option, True, color)
+            option_rect = option_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + index * 60))
+            self.screen.blit(option_text, option_rect)
 
         pygame.display.flip()
-
 
 
 
@@ -177,10 +222,49 @@ class Game:
                 self.ghost_spawn_timer = 0
                 self.enemies.append(self.ghost_queue.popleft())  # Tira da fila e põe no jogo
 
+
         self.player.update()
         # Atualiza cada inimigo na lista de ativos
         for enemy in self.enemies:
             enemy.update()
+
+        #Chamada para verificar colisões a cada frame
+        self.check_collisions()
+
+        if self.level.total_pellets == 0:
+            self.state = 'vitoria_fase'
+
+
+
+    # --- MÉTODOS DE ESTADO: VITÓRIA ---
+    def vitoria_fase_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            # Se apertar ENTER, volta para o menu
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self.state = 'menu_principal'
+
+
+
+    def vitoria_fase_draw(self):
+        self.screen.fill(BLACK)
+        try:
+            font = pygame.font.Font(MAIN_FONT, 48)
+            sub_font = pygame.font.Font(MAIN_FONT, UI_FONT_SIZE)
+        except FileNotFoundError:
+            font = pygame.font.SysFont('arial', 48)
+            sub_font = pygame.font.SysFont('arial', UI_FONT_SIZE)
+
+        title_text = font.render("FASE COMPLETA!", True, YELLOW)
+        instructions_text = sub_font.render("Pressione ENTER para voltar ao menu", True, WHITE)
+        title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+        instructions_rect = instructions_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+
+        self.screen.blit(title_text, title_rect)
+        self.screen.blit(instructions_text, instructions_rect)
+        pygame.display.flip()
+
 
     def playing_draw(self):
         """
@@ -188,12 +272,13 @@ class Game:
         """
         self.screen.fill(BLACK)
         self.level.draw(self.screen)
-        # <<<< ADICIONADO: Chama o metodo de desenho do jogador
+        # Chama o metodo de desenho do jogador
         self.player.draw(self.screen)
-        self.draw_ui()  # Garante que a UI seja desenhada por cima
+
         for enemy in self.enemies:
             enemy.draw(self.screen)
-        self.draw_ui()
+
+        self.draw_ui()# Garante que a UI seja desenhada por cima
         pygame.display.flip()
 
     def draw_ui(self):
@@ -244,8 +329,7 @@ class Game:
                 if event.key == pygame.K_RETURN:
                     # Opção 0: Sair e Salvar
                     if self.selected_pause_option == 0:
-                        print("FUNCIONALIDADE 'SAIR E SALVAR' AINDA NÃO IMPLEMENTADA.")
-                        # Aqui viria a lógica para self.save_game() e self.save_ranking()
+                        self.save_score() #salva o score
                         self.running = False  # Por enquanto, apenas fecha o jogo
 
                     # Opção 1: Sair sem Salvar
@@ -331,6 +415,151 @@ class Game:
 
         return None  # Retorna None se não encontrar um caminho
 
+    def reset_entities(self):
+        """ Reseta todas as entidades para suas posições iniciais. """
+        self.player.reset()
+        for enemy in self.enemies:
+            enemy.reset()
+
+    def check_collisions(self):
+        """ Verifica e trata as colisões entre o jogador e os inimigos. """
+        for enemy in self.enemies:
+            # Calcula a distância entre o centro do jogador e o do inimigo
+            dist = self.player.pixel_pos.distance_to(enemy.pixel_pos)
+            # Se a distância for menor que o raio de ambos (meio GRID_SIZE), eles colidiram
+            if dist < GRID_SIZE / 2:
+                # Caso 1: Jogador está invencível
+                if self.player.invincibility_timer > 0:
+                    print("Fantasma comido!")
+                    self.score += 200  # Adiciona pontos por comer o fantasma
+                    enemy.reset()  # Manda o fantasma de volta para a base
+                # Caso 2: Jogador está vulnerável
+                else:
+                    self.lives -= 1
+                    print(f"Vida perdida! Vidas restantes: {self.lives}")
+                    if self.lives <= 0:
+                        self.state = 'game_over'
+                    else:
+                        # Reseta a posição de todos para continuar a rodada
+                        self.reset_entities()
+
+    # --- MÉTODOS DE ESTADO: GAME OVER ---
+    def game_over_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            # Se apertar ENTER, volta para o menu principal
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self.save_score()
+                self.state = 'menu_principal'
+                # Opcional: Chamar um método de reset geral do jogo aqui, se necessário
+
+    def game_over_draw(self):
+        self.screen.fill(BLACK)
+        try:
+            title_font = pygame.font.Font(MAIN_FONT, 48)
+            instructions_font = pygame.font.Font(MAIN_FONT, UI_FONT_SIZE)
+        except FileNotFoundError:
+            title_font = pygame.font.SysFont('arial', 48)
+            instructions_font = pygame.font.SysFont('arial', UI_FONT_SIZE)
+
+        title_text = title_font.render("GAME OVER", True, RED)
+        score_text = instructions_font.render(f"PONTUAÇÃO FINAL: {self.score}", True, WHITE)
+        instructions_text = instructions_font.render("Pressione ENTER para voltar ao menu", True, WHITE)
+
+        title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 80))
+        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        instructions_rect = instructions_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 80))
+
+        self.screen.blit(title_text, title_rect)
+        self.screen.blit(score_text, score_rect)
+        self.screen.blit(instructions_text, instructions_rect)
+        pygame.display.flip()
+
+
+    def save_score(self):
+        """
+        Salva a pontuação atual no arquivo de ranking.
+        """
+        # Usamos 'a' para 'append', que adiciona ao final do arquivo sem apagar o que já existe.
+        try:
+            with open(RANKING_FILE, 'a') as file:
+                # Salva no formato "NOME PONTOS" para facilitar a leitura depois
+                file.write(f"JOGADOR {self.score}\n")
+            print(f"Pontuação {self.score} salva no ranking.")
+        except Exception as e:
+            print(f"Não foi possível salvar o score: {e}")
+
+
+    def load_scores(self):
+        """
+        Lê o arquivo de ranking, ordena os scores e retorna os melhores.
+        """
+        if not os.path.exists(RANKING_FILE):
+            return []  # Retorna lista vazia se o arquivo não existe
+
+        scores = []
+        try:
+            with open(RANKING_FILE, 'r') as file:
+                for line in file:
+                    # Tenta separar a linha em nome e score. Se falhar, ignora a linha.
+                    try:
+                        name, score = line.strip().split()
+                        scores.append((name, int(score)))
+                    except ValueError:
+                        continue  # Pula para a próxima linha se esta estiver mal formatada
+        except Exception as e:
+            print(f"Não foi possível carregar os scores: {e}")
+            return []
+
+        # A mágica da ordenação: ordena a lista de tuplas pelo segundo elemento (o score),
+        # em ordem decrescente (do maior para o menor).
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+
+        # Retorna apenas os 10 melhores resultados
+        return sorted_scores[:10]
+
+    # --- MÉTODOS DE ESTADO: RANKING ---
+    def ranking_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            # Se apertar ENTER ou ESC, volta para o menu
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE):
+                self.state = 'menu_principal'
+
+    def ranking_draw(self):
+        self.screen.fill(BLACK)
+        # Carrega os scores ordenados
+        high_scores = self.load_scores()
+
+        try:
+            title_font = pygame.font.Font(MAIN_FONT, 36)
+            score_font = pygame.font.Font(MAIN_FONT, UI_FONT_SIZE)
+        except:
+            title_font = pygame.font.SysFont('arial', 36)
+            score_font = pygame.font.SysFont('arial', UI_FONT_SIZE)
+
+        # Desenha o título
+        title_text = title_font.render("RANKING", True, YELLOW)
+        title_rect = title_text.get_rect(center=(WIDTH // 2, 80))
+        self.screen.blit(title_text, title_rect)
+
+        # Desenha cada score
+        for index, (name, score) in enumerate(high_scores):
+            score_text_str = f"{index + 1:2}. {name:<10} {score:>6}"
+            score_text = score_font.render(score_text_str, True, WHITE)
+            score_rect = score_text.get_rect(center=(WIDTH // 2, 180 + index * 40))
+            self.screen.blit(score_text, score_rect)
+
+        # Desenha instrução para voltar
+        back_text = score_font.render("Pressione ENTER para voltar", True, GREY)
+        back_rect = back_text.get_rect(center=(WIDTH // 2, HEIGHT - 50))
+        self.screen.blit(back_text, back_rect)
+
+        pygame.display.flip()
+
+
 #loop principal
     def run(self):
         while self.running:
@@ -344,6 +573,19 @@ class Game:
             elif self.state == 'pausado':
                 self.pausado_events()
                 self.pausado_draw()
+
+            elif self.state == 'game_over':
+                self.game_over_events()
+                self.game_over_draw()
+
+
+            elif self.state == 'vitoria_fase':
+                 self.vitoria_fase_events()
+                 self.vitoria_fase_draw()
+
+            elif self.state == 'exibindo_ranking':
+                 self.ranking_events()
+                 self.ranking_draw()
 
             self.clock.tick(FPS)
 

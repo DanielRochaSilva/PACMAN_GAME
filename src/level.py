@@ -17,11 +17,17 @@ class Level:
         """
         self.matrix = []
         self.load(map_file_path)
+        self.original_matrix = [list(row) for row in self.matrix]
         self.height = len(self.matrix)
         # Verifica se existe ao menos uma linha na matriz antes de tentar acessa-la
         self.width = len(self.matrix[0]) if self.height > 0 else 0
         self.tunnels = {}
-        self._find_tunnels() # Chama o método para popular o dicionário
+        self._find_tunnels() # Chama o metodo para popular o dicionário
+        self.total_pellets = 0
+        self._count_pellets()
+        #: Guarda o número inicial de pellets para o reset
+        self.initial_pellet_count = self.total_pellets
+
 
 
     # =========================================================================
@@ -39,6 +45,26 @@ class Level:
             for line in map_file:
                 # Usar list() para transformar a string em uma lista de caracteres
                 self.matrix.append(list(line.strip()))
+
+        # metodo para resetar o mapa
+    def reset(self):
+            """ Restaura o mapa ao seu estado original, com todos os pontinhos. """
+            self.matrix = [list(row) for row in self.original_matrix]
+            print("Mapa resetado com todos os pontinhos.")
+
+            self.total_pellets = self.initial_pellet_count
+            print("Mapa e contador de pellets resetados.")
+
+
+    # Novo metodo para contar os itens no início
+    def _count_pellets(self):
+        """ Conta o número total de pontinhos e power-ups no mapa. """
+        for row in self.matrix:
+            for tile in row:
+                if tile == '.' or tile == 'o':
+                    self.total_pellets += 1
+        print(f"Mapa carregado com {self.total_pellets} itens coletáveis.")
+
 
     def get_tile(self, line, column):
         """

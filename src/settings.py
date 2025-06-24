@@ -101,3 +101,7 @@ GHOSTS_FOLDER = os.path.join(ART_FOLDER, 'ghosts')
 # 8. CONFIGURAÇÕES DE JOGABILIDADE (NOVA SEÇÃO)
 # =========================================================================================
 TUNNEL_COOLDOWN_SEC = 1.5 # Tempo em segundos que os túneis ficam inativos após o uso
+
+
+#sons
+SOUNDS_FOLDER = os.path.join(ASSETS_FOLDER, 'sounds')

@@ -14,6 +14,8 @@ class Enemy:
         )
         self.image = image
         self.rect = self.image.get_rect()
+        self.starting_pos = pygame.Vector2(pos[0], pos[1]) #resetar
+
 
         self.direction = pygame.Vector2(0, 0)
         self.speed = GHOST_SPEED
@@ -80,7 +82,6 @@ class Enemy:
         if self.direction.length() < self.speed:
             self.pixel_pos = target_pixel_pos  # Trava na posição exata
 
-            # <<<< CORREÇÃO CRUCIAL AQUI >>>>
             # Primeiro, removemos o nó que acabamos de alcançar
             if self.path:
                 self.path.pop(0)
@@ -107,3 +108,14 @@ class Enemy:
     def draw(self, screen):
         self.rect.center = self.pixel_pos
         screen.blit(self.image, self.rect)
+
+    def reset(self):
+        """ Reseta o inimigo para sua posição e estado iniciais. """
+        self.grid_pos = pygame.Vector2(self.starting_pos.x, self.starting_pos.y)
+        self.pixel_pos = pygame.Vector2(
+            self.grid_pos.x * GRID_SIZE + GRID_SIZE // 2,
+            self.grid_pos.y * GRID_SIZE + GRID_SIZE // 2
+        )
+        self.direction = pygame.Vector2(0, 0)
+        self.path = []
+        self.target_node = None

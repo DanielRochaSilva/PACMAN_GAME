@@ -21,6 +21,8 @@ class Player:
         self.direction = pygame.Vector2(0, 0)  # Começa virado para a direita
         self.stored_direction = None
         self.speed = PLAYER_SPEED
+        self.starting_pos = pygame.Vector2(pos[0], pos[1]) #colisões/resetar
+
 
         # --- LÓGICA DE ANIMAÇÃO ---
         self.animations = {}  # Dicionário para guardar as listas de sprites
@@ -184,16 +186,24 @@ class Player:
         # Usa o TAD Mapa para consultar o que há na célula
         tile = self.game.level.get_tile(grid_y, grid_x)
 
+        item_eaten = False  # Flag para saber se algo foi comido
         if tile == '.':  # Se for um pontinho
             # Usa o TAD Mapa para remover o item (troca por espaço vazio)
             self.game.level.set_tile(grid_y, grid_x, ' ')
             # Aumenta a pontuação no TAD Cenário (a classe Game)
             self.game.score += 10
+            item_eaten = True
 
         elif tile == 'o':  # Se for um power-up
             self.game.level.set_tile(grid_y, grid_x, ' ')
             self.game.score += 50
             self.activate_invincibility()
+            item_eaten = True
+
+        # <<<< ADICIONADO: Decrementa o contador se um item foi comido
+        if item_eaten:
+            self.game.level.total_pellets -= 1
+
 
     def activate_invincibility(self):
         """
@@ -203,3 +213,14 @@ class Player:
         # Ex: 7 segundos * 60 FPS = 420 frames de invencibilidade
         self.invincibility_timer = SCARED_TIME * FPS
         print("MODO INVENCÍVEL ATIVADO!")  # Mensagem de teste
+
+    # metodo de resetar o jogador
+    def reset(self):
+        """ Reseta o jogador para sua posição e estado iniciais. """
+        self.grid_pos = pygame.Vector2(self.starting_pos.x, self.starting_pos.y)
+        self.pixel_pos = pygame.Vector2(
+            self.grid_pos.x * GRID_SIZE + GRID_SIZE // 2,
+            self.grid_pos.y * GRID_SIZE + GRID_SIZE // 2
+        )
+        self.direction = pygame.Vector2(0, 0)
+        self.stored_direction = None
